@@ -1,9 +1,10 @@
 package phpserialize_test
 
 import (
-	"github.com/elliotchance/phpserialize"
 	"reflect"
 	"testing"
+
+	"github.com/printesoi/phpserialize"
 )
 
 type struct1 struct {

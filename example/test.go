@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/elliotchance/phpserialize"
+
+	"github.com/printesoi/phpserialize"
 )
 
 func main() {
