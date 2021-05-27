@@ -616,6 +616,18 @@ func TestUnmarshalMultibyte(t *testing.T) {
 	}
 }
 
+func TestUnmarshalCustomUnserialization(t *testing.T) {
+	data := `s:4:"1.23\";`
+	var result amount
+	err := phpserialize.Unmarshal([]byte(data), &result)
+	expectErrorToNotHaveOccurred(t, err)
+
+	expected := amount(1.23)
+	if result != expected {
+		t.Errorf("Expected:\n  %#+v\nGot:\n  %#+v", expected, result)
+	}
+}
+
 var escapeTests = map[string]struct {
 	Unserialized, Serialized string
 }{

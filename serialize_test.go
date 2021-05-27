@@ -1,7 +1,9 @@
 package phpserialize_test
 
 import (
+	"fmt"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/printesoi/phpserialize"
@@ -31,6 +33,33 @@ type marshalTest struct {
 	input   interface{}
 	output  []byte
 	options *phpserialize.MarshalOptions
+}
+
+type amount float64
+
+func (a amount) PhpSerialize() (reflect.Value, error) {
+	v := reflect.New(reflect.TypeOf("")).Elem()
+	v.SetString(fmt.Sprintf("%.2f", a))
+	return v, nil
+}
+
+func (a *amount) PhpUnserialize(data interface{}) error {
+	switch v := data.(type) {
+	case string:
+		b, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return err
+		}
+		*a = amount(b)
+
+	case float64:
+		*a = amount(v)
+
+	default:
+		return fmt.Errorf("Type not supported: %T", v)
+	}
+
+	return nil
 }
 
 func getStdClassOnly() *phpserialize.MarshalOptions {
@@ -152,6 +181,13 @@ var marshalTests = map[string]marshalTest{
 		&struct1{20, Struct2{7.89}, false, "yay"},
 		[]byte("O:8:\"stdClass\":3:{s:3:\"foo\";i:20;s:3:\"bar\";O:8:\"stdClass\":1:{s:3:\"qux\";d:7.89;}s:3:\"baz\";s:3:\"yay\";}"),
 		getStdClassOnly(),
+	},
+
+	// Custom serialization
+	"Marshaler: amount": {
+		amount(1.23),
+		[]byte("s:4:\"1.23\";"),
+		nil,
 	},
 }
 

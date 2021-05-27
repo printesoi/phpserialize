@@ -198,7 +198,6 @@ func MarshalStruct(input interface{}, options *MarshalOptions) ([]byte, error) {
 // Marshal is the canonical way to perform the equivalent of serialize() in PHP.
 // It can handle encoding scalar types, slices and maps.
 func Marshal(input interface{}, options *MarshalOptions) ([]byte, error) {
-
 	if options == nil {
 		options = DefaultMarshalOptions()
 	}
@@ -215,8 +214,20 @@ func Marshal(input interface{}, options *MarshalOptions) ([]byte, error) {
 		return MarshalNil(), nil
 	}
 
+	return marshalValue(reflect.ValueOf(input), options)
+}
+
+func marshalValue(value reflect.Value, options *MarshalOptions) ([]byte, error) {
+	// Allow custom serialization.
+	if ps, ok := value.Interface().(Marshaler); ok {
+		v, err := ps.PhpSerialize()
+		if err != nil {
+			return nil, err
+		}
+		value = v
+	}
+
 	// Otherwise we need to decide if it is a scalar value, map or slice.
-	value := reflect.ValueOf(input)
 	switch value.Kind() {
 	case reflect.Bool:
 		return MarshalBool(value.Bool()), nil
@@ -244,14 +255,13 @@ func Marshal(input interface{}, options *MarshalOptions) ([]byte, error) {
 		return marshalMap(value.Interface(), options)
 
 	case reflect.Struct:
-		return MarshalStruct(input, options)
+		return MarshalStruct(value.Interface(), options)
 
 	case reflect.Ptr:
-		return Marshal(value.Elem().Interface(), options)
-
-	default:
-		return nil, fmt.Errorf("can not encode: %T", input)
+		return marshalValue(value.Elem(), options)
 	}
+
+	return nil, fmt.Errorf("can not encode: %v", value.Type().String())
 }
 
 func marshalSlice(input interface{}, options *MarshalOptions) ([]byte, error) {

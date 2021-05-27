@@ -67,3 +67,60 @@ func main() {
 	fmt.Println(out)
 }
 ```
+
+### Custom marshaling/unmarshaling
+
+```go
+
+package main
+
+import (
+	"errors"
+	"fmt"
+	"reflect"
+	"github.com/printesoi/phpserialize"
+	"github.com/shopspring/decimal"
+)
+
+type Amount decimal.Decimal
+
+func (a Amount) PhpSerialize() reflect.Value {
+	v := reflect.New(reflect.TypeOf("")).Elem()
+	v.SetString(decimal.StringFixed(2))
+	return v, nil
+}
+
+func (a *Amount) PhpUnserialize(data interface{}) error {
+	switch v := data.(type) {
+	case string:
+		dec, err := decimal.NewFromString(v)
+			if err != nil {
+				return err
+			}
+		*a = Amount(dec)
+	case float64:
+		*a = Amount(decimal.NewFromFloat(v))
+	default:
+		return fmt.Errorf("Unsupported type: `%T`", data)
+	}
+	return nil
+}
+
+func main() {
+	a1 := Amount(decimal.NewFromFloat(1.23))
+	out, err := phpserialize.Marshal(a1, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(out)
+
+	var a2 Amount
+	err = phpserialize.Unmarshal(out, &a2)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(a2.String())
+}
+```

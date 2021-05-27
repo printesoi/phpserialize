@@ -119,6 +119,15 @@ func UnmarshalObject(data []byte, v reflect.Value) error {
 }
 
 func Unmarshal(data []byte, v interface{}) error {
+	if us, ok := v.(Unmarshaler); ok {
+		v, _, err := consumeNext(data, 0)
+		if err != nil {
+			return err
+		}
+
+		return us.PhpUnserialize(v)
+	}
+
 	value := reflect.ValueOf(v).Elem()
 
 	switch value.Kind() {
